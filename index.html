@@ -295,6 +295,31 @@ button{font-family:inherit;cursor:pointer}
 .fcard .fs{font-size:11px;color:#9aa1a6;margin-top:2px;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap}
 #list .wrap{padding:0 0 20px}
+.ulist{background:#fff;margin-top:8px}
+.uitem{display:flex;align-items:center;gap:10px;padding:12px;color:inherit;
+  text-decoration:none;border-bottom:1px solid var(--line)}
+.uitem:last-child{border-bottom:0}
+.uitem .uav{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#e9ecee;flex:none}
+.uitem .ui1{flex:1;min-width:0}
+.uitem .un{font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.uitem .us{font-size:11.5px;color:#9aa1a6;margin-top:3px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.uitem .bg{flex:none;font-size:10px;line-height:1.5;padding:0 6px;border-radius:4px;color:#fff;
+  white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+#me,#msg{display:none;background:var(--bg);min-height:100vh;padding-bottom:64px}
+.mehero{background:var(--hdr);padding:22px 16px 26px;display:flex;align-items:center;gap:13px;color:#fff}
+.mehero .mav{width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.28);
+  display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}
+.mehero .mn{font-size:17px;font-weight:700}
+.mehero .ms{font-size:12px;opacity:.9;margin-top:4px}
+.mlist{background:#fff;margin-top:8px}
+.mrow{display:flex;align-items:center;gap:11px;padding:14px 14px;border-bottom:1px solid var(--line);
+  color:inherit;text-decoration:none;font-size:14.5px}
+.mrow:last-child{border-bottom:0}
+.mrow .mi{width:22px;text-align:center;font-size:16px;flex:none}
+.mrow .mt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .mg{color:#c3c9cc;font-size:15px;flex:none}
 
 #tip{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:rgba(0,0,0,.86);
   color:#fff;font-size:13px;padding:9px 16px;border-radius:20px;z-index:99;opacity:0;
@@ -345,6 +370,15 @@ button{font-family:inherit;cursor:pointer}
 
   <!-- ═══ 板块帖子列表 / 搜索结果 ═══ -->
   <div id="list"></div>
+
+  <!-- ═══ 用户列表（附近的人 / 用户搜索） ═══ -->
+  <div id="users"></div>
+
+  <!-- ═══ 我的（免登录菜单页） ═══ -->
+  <div id="me"></div>
+
+  <!-- ═══ 消息（免登录说明页） ═══ -->
+  <div id="msg"></div>
 
   <!-- ═══ 图片查看器 ═══ -->
   <div id="viewer"><button class="cl">✕</button><img id="viewerImg" alt=""></div>
@@ -609,8 +643,9 @@ var GRID = [
   ['经验分享','img/fqrzjy.png','fid','22'],      ['分享淫妻','img/yqfx.png','fid','9'],
   ['出租妻子','img/zq3.png','fid','19'],         ['换妻群','img/hqq3.png','act','forum'],
   ['黄果短剧','img/hgtb.png','url','https://zcssr1998-art.github.io/duanju/'],
-  ['AI脱衣','img/aituoyi.png','act','tucao'],    ['妻社直播','img/zb2.png','act','live'],
-  ['附近的人','img/syfjr2.png','act','near']
+  ['AI脱衣','img/aituoyi.png','url','https://x1.aixt26916.com/'],
+  ['妻社直播','img/zb2.png','url','https://ty828.smzftongyong.lol/plugin.php?id=qsts_app:video'],
+  ['附近的人','img/syfjr2.png','act','users']
 ];
 var GRID_BASE = 'https://img.qsimg26515.org.cn/';
 
@@ -631,7 +666,7 @@ function buildTabs(){
       (b.dataset.n === '母狗公示榜') ? 'linear-gradient(100deg,#3e3e37 0%,#161614 100%)' : '';
     reset(); load();
   });
-  $('.me').addEventListener('click', function(){ tip('「我的」页面需要登录，本复原版未还原'); });
+  $('.me').addEventListener('click', function(){ showMe(); });
 }
 function buildGrid(){
   var h = '';
@@ -648,9 +683,7 @@ function buildGrid(){
     if(it[2] === 'fid'){ showList(it[3], it[0]); return; }
     if(it[2] === 'url'){ window.open(it[3], '_blank'); return; }
     if(it[3] === 'forum'){ showForum(); return; }
-    if(it[3] === 'near'){ tip('「附近的人」需要定位与登录，未还原'); return; }
-    if(it[3] === 'live'){ tip('「妻社直播」为站外服务，需自行登录'); return; }
-    if(it[3] === 'tucao'){ tip('「AI脱衣」为站外服务，需自行登录'); return; }
+    if(it[3] === 'users'){ showUsers('妻'); return; }
   });
 }
 function hotPlaceholder(){
@@ -833,10 +866,14 @@ function bindBack(){
 }
 function closeDetail(){
   $('#detail').innerHTML = '';
-  var back = (DET_FROM === 'list' || DET_FROM === 'forum') ? DET_FROM : 'home';
+  var ok = ['list','forum','users','me','msg'];
+  var back = ok.indexOf(DET_FROM) >= 0 ? DET_FROM : 'home';
   showView(back);
   if(back === 'home') setTab('home');
   if(back === 'forum') setTab('video');
+  if(back === 'users') setTab('video');
+  if(back === 'me') setTab('me');
+  if(back === 'msg') setTab('msg');
   if(location.hash) history.replaceState({}, '', location.pathname);
 }
 
@@ -1175,13 +1212,142 @@ function toast(t){
 /* ═══════════ 视图切换 ═══════════ */
 var CUR = 'home';
 function showView(v){
-  ['home','detail','forum','list'].forEach(function(k){
+  ['home','detail','forum','list','users','me','msg'].forEach(function(k){
     var el = document.getElementById(k);
     if(!el) return;
     el.style.display = (k === v) ? (k === 'home' ? '' : 'block') : 'none';
   });
   CUR = v;
   window.scrollTo(0, 0);
+}
+
+/* ═══════════ 消息（免登录说明页） ═══════════ */
+function showMsg(){
+  showView('msg'); setTab('msg');
+  $('#msg').innerHTML =
+    '<div class="lh"><button class="bk" id="mBack">‹</button><div class="t">消息</div><span></span></div>' +
+    '<div class="empty" style="padding-top:48px"><div class="big">💬</div>' +
+      '私信、评论、点赞消息需要账号登录<br>本站为免登录浏览版，不接收消息' +
+      '<br><br><button onclick="showUsers(\'妻\')" style="border:0;background:#14b886;color:#fff;' +
+      'padding:9px 22px;border-radius:20px;font-size:14px">改为搜索用户</button>' +
+      '<br><br><button onclick="showForum()" style="border:0;background:#eef2f3;color:#444;' +
+      'padding:9px 22px;border-radius:20px;font-size:14px">浏览全部板块</button></div>';
+  var b = $('#mBack');
+  if(b) b.onclick = function(){ showView('home'); setTab('home'); };
+}
+
+/* ═══════════ 我的（免登录菜单页） ═══════════ */
+var MENU = [
+  ['🧭','漂流瓶','app','/pages/drift/index','#9CB09E'],
+  ['🏆','排行榜','app','/pages/ranking/all','#7258F6'],
+  ['📥','APP下载','url','https://drczz.qsggzzdrctz.com/qszzym/qsxz.html?iuid=5501','#8B00F1'],
+  ['📜','积分规则','tid','1998','#D2D03E'],
+  ['👗','AI脱衣','url','https://x1.aixt1.com','#D43AEE'],
+  ['🌏','回家的路','url','https://yjdztzy20251227.blob.core.windows.net/yjdz/index.html','#1ADAEA'],
+  ['🎁','邀请规则','url','https://2025.qstabs.com/plugin.php?id=keke_market','#57904B'],
+  ['💎','免费兑换VIP','app','/pages/invites/agency/index','#0A0A0A'],
+  ['📍','附近的人','users','','#ED1010'],
+  ['✅','认证流程','tid','1997','#1FEB26']
+];
+
+function showMe(){
+  showView('me'); setTab('me');
+  var w = $('#me');
+  var h = '<div class="mehero"><div class="mav">👤</div>' +
+    '<div><div class="mn">未登录浏览</div><div class="ms">免账号模式 · 全部帖子可直接查看</div></div></div>' +
+    '<div class="mlist">';
+  MENU.forEach(function(m, i){
+    h += '<a class="mrow" href="javascript:;" data-m="' + i + '">' +
+      '<span class="mi">' + m[0] + '</span><span class="mt">' + m[1] + '</span>' +
+      '<span class="mg">›</span></a>';
+  });
+  h += '</div><div class="mlist"><a class="mrow" href="javascript:;" data-m="about">' +
+    '<span class="mi">ℹ️</span><span class="mt">关于本站</span><span class="mg">›</span></a></div>';
+  w.innerHTML = h;
+
+  w.onclick = function(e){
+    var a = e.target.closest('.mrow'); if(!a) return;
+    var k = a.dataset.m;
+    if(k === 'about'){ tip('个人复原版 · 去广告 · 免登录 · 播放器为自建'); return; }
+    var m = MENU[+k]; if(!m) return;
+    var act = m[2], val = m[3];
+    if(act === 'url'){ window.open(val, '_blank'); return; }
+    if(act === 'tid'){ openDetail(String(val)); return; }
+    if(act === 'users'){ showUsers('妻'); return; }
+    if(val === '/pages/ranking/userList'){ showUsers('妻'); return; }
+    if(val === '/pages/drift/index'){ doSearch('漂流瓶'); return; }
+    if(val === '/pages/ranking/all'){ showList('9', '淫妻分享', 'home'); return; }
+    tip('「' + m[1] + '」需要登录或为站外服务');
+  };
+}
+
+/* ═══════════ 用户列表（附近的人 / 用户搜索） ═══════════ */
+var U = { kw:'', page:1, end:false, loading:false, back:'home', io:null, per:20 };
+
+function showUsers(kw){
+  U.kw = kw || '妻';
+  U.page = 1; U.end = false; U.loading = false;
+  showView('users');
+  var w = $('#users');
+  w.innerHTML = '<div class="lh"><button class="bk" id="uBack">‹</button>' +
+    '<div class="t">' + (U.kw ? '搜索用户「' + esc(U.kw) + '」' : '附近的人') + '</div>' +
+    '<span class="cnt" id="uCnt"></span></div>' +
+    '<div id="uBody" class="ulist">' + skeleton(3) + '</div>' +
+    '<div id="uSent" style="height:1px"></div>';
+  $('#uBack').onclick = function(){ showView('home'); setTab('home'); };
+  if(U.io){ U.io.disconnect(); U.io = null; }
+  if(window.IntersectionObserver){
+    U.io = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting) loadUsers(); });
+    }, { rootMargin: '600px' });
+    U.io.observe($('#uSent'));
+  }
+  loadUsers();
+}
+
+function loadUsers(){
+  if(U.loading || U.end) return;
+  U.loading = true;
+  var q = U.kw ? U.kw : '妻';
+  apiGet('cearch.search', { page: U.page, perpage: U.per, keywords: q, isUser: 'true', type: 'users' }, newDev())
+    .then(function(j){
+      if(!j || j.code != 200) throw new Error((j && j.msg) || '用户接口失败');
+      var d = j.data || {}, us = d.users || [];
+      if(U.page === 1) $('#uBody').innerHTML = '';
+      if(!us.length){
+        U.end = true;
+        if(U.page === 1) $('#uBody').innerHTML = '<div class="empty"><div class="big">👤</div>没有找到用户</div>';
+        return;
+      }
+      var h = '';
+      us.forEach(function(u){
+        var lv = (u.groupstars || '').trim(), gt = (u.grouptitle || '').trim();
+        var badge = lv ? '<span class="bg" style="background:' + esc(u.groupcolor || '#FF6666') + '">' +
+          esc(lv + (gt ? ' ' + gt : '')) + '</span>' : '';
+        h += '<a class="uitem" href="javascript:;" data-uid="' + u.uid + '" data-nm="' + esc(u.username) + '">' +
+          '<img class="uav" src="' + IMG(u.avatarurl) + '" loading="lazy" alt="" onerror="this.style.opacity=.15">' +
+          '<div class="ui1"><div class="un">' + esc(u.username) + '</div>' +
+          '<div class="us">' + (u.isfollow == 1 ? '已关注' : '妻社用户') + '</div></div>' + badge + '</a>';
+      });
+      $('#uBody').insertAdjacentHTML('beforeend', h);
+      $('#uCnt').textContent = '第 ' + U.page + ' 页';
+      if(!d.users_next || us.length < U.per){ U.end = true; }
+      else { U.page++; }
+      bindUserTap();
+    }).catch(function(e){
+      if(U.page === 1) $('#uBody').innerHTML = '<div class="empty"><div class="big">⚠</div>' + esc(e.message) + '</div>';
+    }).then(function(){ U.loading = false; });
+}
+
+function bindUserTap(){
+  var b = $('#uBody');
+  if(b.dataset.bound === '1') return;
+  b.dataset.bound = '1';
+  b.addEventListener('click', function(e){
+    var a = e.target.closest('.uitem'); if(!a) return;
+    var nm = a.dataset.nm || '';
+    doSearch(nm);
+  });
 }
 
 /* ═══════════ 板块页（底部「视频」tab） ═══════════ */
@@ -1352,8 +1518,9 @@ $('#tab').addEventListener('click', function(e){
     return;
   }
   if(t === 'video'){ setTab('video'); showForum(); return; }
+  if(t === 'msg'){ showMsg(); return; }
+  if(t === 'me'){ showMe(); return; }
   setTab(t);
-  tip('「' + b.textContent.trim() + '」页面需要登录，本复原版未还原');
 });
 
 /* ═══════════ 提示 ═══════════ */
