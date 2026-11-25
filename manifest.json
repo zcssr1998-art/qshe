@@ -1,0 +1,22 @@
+{
+ "name": "妻社",
+ "short_name": "妻社",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "portrait",
+ "background_color": "#ffffff",
+ "theme_color": "#14b886",
+ "icons": [
+  {
+   "src": "https://img.qsimg26515.org.cn/img/fqrzjy.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "https://img.qsimg26515.org.cn/img/fqrzjy.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
+}
