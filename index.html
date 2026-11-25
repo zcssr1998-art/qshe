@@ -273,6 +273,29 @@ button{font-family:inherit;cursor:pointer}
   background:#26262f;color:#fff}
 #pl .err .a button.p{background:var(--acc);font-weight:600}
 
+/* ── 板块页 / 列表页 / 搜索页 ── */
+#forum,#list{display:none;background:var(--bg);min-height:100vh;padding-bottom:64px}
+.lh{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:11px 12px;
+  background:#fff;border-bottom:1px solid var(--line)}
+.lh button.bk{background:none;border:0;font-size:22px;color:#333;padding:0 2px;line-height:1}
+.lh .t{flex:1;min-width:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lh .cnt{font-size:12px;color:#9aa1a6;flex:none}
+.fgrp{background:#fff;margin-bottom:8px}
+.fgrp h4{margin:0;padding:14px 12px 10px;font-size:13px;color:#6c7378;font-weight:600;
+  display:flex;align-items:center;gap:6px}
+.fgrp h4::before{content:'';width:3px;height:13px;border-radius:2px;background:var(--acc)}
+.fgrp .gl{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 12px 12px}
+@media(min-width:560px){.fgrp .gl{grid-template-columns:repeat(3,1fr)}}
+.fcard{display:flex;gap:9px;align-items:center;background:#f6f8f9;border-radius:10px;
+  padding:9px 10px;text-decoration:none;color:inherit;overflow:hidden}
+.fcard img{width:38px;height:38px;border-radius:9px;object-fit:cover;background:#e9ecee;flex:none}
+.fcard .fi{flex:1;min-width:0}
+.fcard .fn{font-size:13.5px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.fcard .fs{font-size:11px;color:#9aa1a6;margin-top:2px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+#list .wrap{padding:0 0 20px}
+
 #tip{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:rgba(0,0,0,.86);
   color:#fff;font-size:13px;padding:9px 16px;border-radius:20px;z-index:99;opacity:0;
   transition:opacity .25s;pointer-events:none;max-width:86%;text-align:center}
@@ -316,6 +339,12 @@ button{font-family:inherit;cursor:pointer}
     <button data-t="msg"><span class="ic">💬</span>消息</button>
     <button data-t="me"><span class="ic">👤</span>我的</button>
   </div>
+
+  <!-- ═══ 板块页（底部「视频」tab） ═══ -->
+  <div id="forum"></div>
+
+  <!-- ═══ 板块帖子列表 / 搜索结果 ═══ -->
+  <div id="list"></div>
 
   <!-- ═══ 图片查看器 ═══ -->
   <div id="viewer"><button class="cl">✕</button><img id="viewerImg" alt=""></div>
@@ -447,21 +476,22 @@ var md5 = (function(){
 
 /* 一次上游请求：自带签名头、限流退避、5 分钟缓存 */
 var _apiCache = {};
-function apiGet(name, params){
+function apiGet(name, params, dev){
   var kv = [];
   for(var k in (params || {})){
     if(params[k] === undefined || params[k] === null) continue;
     kv.push(k + '=' + encodeURIComponent(params[k]));
   }
   var qs = kv.join('&');
-  var ck = name + '|' + qs;
+  var dv = dev || DEVICE;
+  var ck = name + '|' + dv + '|' + qs;
   var hit = _apiCache[ck];
   if(hit && Date.now() - hit.t < 300000) return Promise.resolve(hit.v);
 
   var url = APIBASE + name + (qs ? '?' + qs : '');
   var hdr = {
     'sign': md5('url=' + name + '&version=' + APIVER + '&time=DATA&domain=' + DOMAIN),
-    'version': APIVER, 'deviceid': DEVICE, 'language': 'zh-Hans'
+    'version': APIVER, 'deviceid': dv, 'language': 'zh-Hans'
   };
   var tries = 0;
   function go(){
@@ -572,11 +602,15 @@ var TABS = [
 
 var HOT = ['海南','南昌','回族','广东','广州','苏州','成都','江苏','浙江','天津','广西','新疆'];
 
+/* 九宫格：[名称, 图标, 动作, 参数]。action=fid 进板块列表；act=forum 进全部板块；url 外链 */
 var GRID = [
-  ['认证交友','img/fqrzjy.png'], ['调教露出','img/tjfx.png'],   ['绿帽献妻','img/lmxq.png'],
-  ['夫妻交换','img/fqjh.png'],   ['经验分享','img/fqrzjy.png'], ['分享淫妻','img/yqfx.png'],
-  ['出租妻子','img/zq3.png'],    ['换妻群','img/hqq3.png'],     ['黄果短剧','img/hgtb.png'],
-  ['AI脱衣','img/aituoyi.png'],  ['妻社直播','img/zb2.png'],    ['附近的人','img/syfjr2.png']
+  ['认证交友','img/fqrzjy.png','fid','4'],       ['调教露出','img/tjfx.png','fid','6'],
+  ['绿帽献妻','img/lmxq.png','fid','11'],        ['夫妻交换','img/fqjh.png','fid','5'],
+  ['经验分享','img/fqrzjy.png','fid','22'],      ['分享淫妻','img/yqfx.png','fid','9'],
+  ['出租妻子','img/zq3.png','fid','19'],         ['换妻群','img/hqq3.png','act','forum'],
+  ['黄果短剧','img/hgtb.png','url','https://zcssr1998-art.github.io/duanju/'],
+  ['AI脱衣','img/aituoyi.png','act','tucao'],    ['妻社直播','img/zb2.png','act','live'],
+  ['附近的人','img/syfjr2.png','act','near']
 ];
 var GRID_BASE = 'https://img.qsimg26515.org.cn/';
 
@@ -601,15 +635,22 @@ function buildTabs(){
 }
 function buildGrid(){
   var h = '';
-  GRID.forEach(function(g){
-    h += '<a href="javascript:;" data-n="' + g[0] + '"><img src="' + IMG(GRID_BASE + g[1]) +
+  GRID.forEach(function(g, i){
+    h += '<a href="javascript:;" data-i="' + i + '"><img src="' + IMG(GRID_BASE + g[1]) +
          '" loading="lazy" alt="" onerror="this.style.opacity=.18"><span>' + g[0] + '</span></a>';
   });
   var g = $('#grid');
   g.innerHTML = h;
   g.addEventListener('click', function(e){
     var a = e.target.closest('a'); if(!a) return;
-    tip(a.dataset.n + '：分类流需登录，本复原版只还原推荐流');
+    var it = GRID[+a.dataset.i];
+    if(!it) return;
+    if(it[2] === 'fid'){ showList(it[3], it[0]); return; }
+    if(it[2] === 'url'){ window.open(it[3], '_blank'); return; }
+    if(it[3] === 'forum'){ showForum(); return; }
+    if(it[3] === 'near'){ tip('「附近的人」需要定位与登录，未还原'); return; }
+    if(it[3] === 'live'){ tip('「妻社直播」为站外服务，需自行登录'); return; }
+    if(it[3] === 'tucao'){ tip('「AI脱衣」为站外服务，需自行登录'); return; }
   });
 }
 function hotPlaceholder(){
@@ -728,8 +769,8 @@ $('#viewer').addEventListener('click', function(e){
   $('#viewer').classList.remove('on');
 });
 
-/* ═══════════ 首页事件 ═══════════ */
-$('#feed').addEventListener('click', function(e){
+/* ═══════════ 卡片流事件（首页 + 板块列表 + 搜索结果共用） ═══════════ */
+function cardTap(e){
   var flw = e.target.closest('[data-flw]');
   if(flw){ e.stopPropagation(); tip('关注需要登录'); return; }
 
@@ -753,15 +794,20 @@ $('#feed').addEventListener('click', function(e){
   }
   var card = e.target.closest('.card');
   if(card) openDetail(card.dataset.tid);
+}
+$('#feed').addEventListener('click', cardTap);
+document.addEventListener('click', function(e){
+  var c = e.target.closest('#lFeed');
+  if(c) cardTap(e);
 });
 
 /* ═══════════ 详情页 ═══════════ */
+var DET_FROM = 'home';
 function openDetail(tid){
   var it = S.byTid[tid];
   var d = $('#detail');
-  $('#home').style.display = 'none';
-  d.style.display = 'block';
-  window.scrollTo(0, 0);
+  DET_FROM = CUR === 'detail' ? DET_FROM : CUR;
+  showView('detail');
   history.pushState({ tid: tid }, '', '#t' + tid);
 
   d.innerHTML = '<div class="dh"><button id="dBack">‹</button><div class="t">' +
@@ -786,9 +832,11 @@ function bindBack(){
   if(b) b.onclick = function(){ closeDetail(); };
 }
 function closeDetail(){
-  $('#detail').style.display = 'none';
   $('#detail').innerHTML = '';
-  $('#home').style.display = '';
+  var back = (DET_FROM === 'list' || DET_FROM === 'forum') ? DET_FROM : 'home';
+  showView(back);
+  if(back === 'home') setTab('home');
+  if(back === 'forum') setTab('video');
   if(location.hash) history.replaceState({}, '', location.pathname);
 }
 
@@ -1124,22 +1172,187 @@ function toast(t){
   toast._t = setTimeout(function(){ g.classList.remove('on'); }, 700);
 }
 
+/* ═══════════ 视图切换 ═══════════ */
+var CUR = 'home';
+function showView(v){
+  ['home','detail','forum','list'].forEach(function(k){
+    var el = document.getElementById(k);
+    if(!el) return;
+    el.style.display = (k === v) ? (k === 'home' ? '' : 'block') : 'none';
+  });
+  CUR = v;
+  window.scrollTo(0, 0);
+}
+
+/* ═══════════ 板块页（底部「视频」tab） ═══════════ */
+var VID_FIDS = ['28','43','26','27','39','41','33','35'];
+var COM_FIDS = ['22','44','7','18'];
+
+function showForum(force){
+  showView('forum');
+  var f = $('#forum');
+  if(f.dataset.built === '1' && !force) return;
+  f.dataset.built = '1';
+  f.innerHTML = '<div class="lh"><button class="bk" id="fBack">‹</button>' +
+    '<div class="t">社区 · 板块</div><span class="cnt" id="fCnt"></span></div>' +
+    '<div id="fBody" style="padding-bottom:20px">' + skeleton(2) + '</div>';
+  $('#fBack').onclick = function(){ showView('home'); setTab('home'); };
+
+  apiGet('forum.getForumByType', { type: 'square' }).then(function(j){
+    if(!j || j.code != 200) throw new Error((j && j.msg) || '板块接口失败');
+    var grp = (j.data && j.data[0]) || {};
+    var fl  = grp.forumList || [];
+    if(!fl.length) throw new Error('板块数据为空');
+    $('#fCnt').textContent = fl.length + ' 个板块';
+
+    function fcard(it){
+      var ic = IMG(it.icon || '');
+      return '<a class="fcard" href="javascript:;" data-fid="' + it.fid + '" data-nm="' + esc(it.name) + '">' +
+        '<img src="' + ic + '" loading="lazy" alt="" onerror="this.style.opacity=.15">' +
+        '<div class="fi"><div class="fn">' + esc(it.name) + '</div>' +
+        '<div class="fs">主题 ' + num(it.threads) + ' · 帖 ' + num(it.posts) + '</div></div></a>';
+    }
+    var com = fl.filter(function(x){ return COM_FIDS.indexOf(String(x.fid)) >= 0; });
+    var vid = fl.filter(function(x){ return VID_FIDS.indexOf(String(x.fid)) >= 0; });
+    var rst = fl.filter(function(x){ return COM_FIDS.indexOf(String(x.fid)) < 0 && VID_FIDS.indexOf(String(x.fid)) < 0; });
+
+    var h = '';
+    if(com.length) h += '<div class="fgrp"><h4># 社区板块</h4><div class="gl">' + com.map(fcard).join('') + '</div></div>';
+    if(vid.length) h += '<div class="fgrp"><h4># 视频板块</h4><div class="gl">' + vid.map(fcard).join('') + '</div></div>';
+    if(rst.length) h += '<div class="fgrp"><h4># 全部板块</h4><div class="gl">' + rst.map(fcard).join('') + '</div></div>';
+    $('#fBody').innerHTML = h;
+
+    $('#fBody').addEventListener('click', function(e){
+      var a = e.target.closest('.fcard'); if(!a) return;
+      showList(a.dataset.fid, a.dataset.nm, 'forum');
+    });
+  }).catch(function(e){
+    $('#fBody').innerHTML = '<div class="empty"><div class="big">⚠</div>板块加载失败：' + esc(e.message) +
+      '<br><br><button onclick="showForum(1)" style="border:0;background:#14b886;color:#fff;padding:9px 22px;border-radius:20px;font-size:14px">重试</button></div>';
+  });
+}
+
+/* ═══════════ 板块列表 / 搜索结果 ═══════════ */
+var L = { fid:'', kw:'', page:1, end:false, loading:false, back:'home', io:null, per:10 };
+var DEVBAG = [];
+
+function newDev(){
+  var s = '', h = '0123456789abcdef';
+  for(var i = 0; i < 25; i++) s += h[Math.floor(Math.random() * 16)];
+  return s;
+}
+
+function listShell(title, back){
+  L.back = back || 'home';
+  L.page = 1; L.end = false; L.loading = false;
+  showView('list');
+  $('#list').innerHTML =
+    '<div class="lh"><button class="bk" id="lBack">‹</button>' +
+    '<div class="t" id="lTitle">' + esc(title) + '</div><span class="cnt" id="lCnt"></span></div>' +
+    '<div class="wrap" id="lFeed"></div><div id="lSent" style="height:1px"></div>';
+  $('#lBack').onclick = function(){
+    if(L.back === 'forum'){ showForum(); } else { showView('home'); setTab('home'); }
+  };
+  if(L.io){ L.io.disconnect(); L.io = null; }
+  if(window.IntersectionObserver){
+    L.io = new IntersectionObserver(function(es){
+      es.forEach(function(en){ if(en.isIntersecting) loadList(); });
+    }, { rootMargin: '600px' });
+    L.io.observe($('#lSent'));
+  } else {
+    window.addEventListener('scroll', function(){
+      if(CUR === 'list' && window.innerHeight + window.scrollY > document.body.offsetHeight - 800) loadList();
+    });
+  }
+}
+
+function showList(fid, name, back){
+  L.fid = String(fid); L.kw = '';
+  listShell(name || '板块', back || 'home');
+  loadList();
+}
+
+function doSearch(kw){
+  kw = (kw || '').trim();
+  if(!kw){ tip('先输入关键词'); return; }
+  L.fid = ''; L.kw = kw;
+  listShell('搜索：' + kw, 'home');
+  loadList();
+}
+
+function loadList(){
+  if(L.loading || L.end) return;
+  L.loading = true;
+  if(L.page === 1) $('#lFeed').innerHTML = skeleton(3);
+
+  var req;
+  if(L.kw){
+    req = apiGet('cearch.search', { page: L.page, perpage: L.per, keywords: L.kw, isUser: 'false', type: 'all' }, newDev());
+  } else {
+    req = apiGet('postlist.getThreadList', {
+      page: L.page, perpage: L.per, fid: L.fid, tabsid: 'new', filter: 'lastpost', orderby: '', fidpw: ''
+    });
+  }
+
+  req.then(function(j){
+    if(!j) throw new Error('空响应');
+    /* 搜索次数用尽 → 换设备号重试一次（服务端按 deviceid 计次） */
+    if(j.code == 20011 && L.kw && !L._retried){
+      L._retried = true;
+      L.loading = false;
+      return apiGet('cearch.search', { page: L.page, perpage: L.per, keywords: L.kw, isUser: 'false', type: 'all' }, newDev())
+        .then(function(j2){ L.loading = true; return j2; });
+    }
+    if(j.code != 200) throw new Error(j.msg || ('接口返回 ' + j.code));
+    var d = j.data || {};
+    var list, next;
+    if(L.kw){ list = d.threads || []; next = !!d.threads_next; }
+    else    { list = d.list || [];    next = !!d.nextPage; }
+    if(!L.kw && L.page === 1 && d.forum && d.forum.name) $('#lTitle').textContent = d.forum.name;
+
+    if(L.page === 1) $('#lFeed').innerHTML = '';
+    if(!list.length){
+      L.end = true;
+      if(L.page === 1) $('#lFeed').innerHTML = '<div class="empty"><div class="big">🗒</div>' +
+        (L.kw ? '没有搜到「' + esc(L.kw) + '」相关内容' : '这个板块暂时没有内容') + '</div>';
+      else $('#lFeed').insertAdjacentHTML('beforeend', '<div class="end">— 到底了 —</div>');
+      return;
+    }
+    var h = '';
+    list.forEach(function(it){ S.byTid[it.tid] = it; h += cardHTML(it); });
+    $('#lFeed').insertAdjacentHTML('beforeend', h);
+    $('#lCnt').textContent = '第 ' + L.page + ' 页';
+    if(!next || list.length < L.per){
+      L.end = true;
+      $('#lFeed').insertAdjacentHTML('beforeend', '<div class="end">— 到底了 —</div>');
+    } else {
+      L.page++;
+    }
+  }).catch(function(e){
+    console.error(e);
+    if(L.page === 1) $('#lFeed').innerHTML = '<div class="empty"><div class="big">⚠</div>加载失败：' + esc(e.message) +
+      '<br><br><button onclick="loadList()" style="border:0;background:#14b886;color:#fff;padding:9px 22px;border-radius:20px;font-size:14px">重试</button></div>';
+    else tip('加载失败：' + e.message);
+  }).then(function(){ L.loading = false; });
+}
+
+function setTab(t){
+  $$('#tab button').forEach(function(b){ b.classList.toggle('on', b.dataset.t === t); });
+}
+
 /* ═══════════ 底部栏 ═══════════ */
 $('#tab').addEventListener('click', function(e){
   var b = e.target.closest('button'); if(!b) return;
-  if(b.classList.contains('mid')){ tip('发帖需要登录'); return; }
+  if(b.classList.contains('mid')){ tip('发帖需要登录，本复原版未还原'); return; }
   var t = b.dataset.t;
   if(t === 'home'){
-    if($('#detail').style.display !== 'none') closeDetail();
+    showView('home'); setTab('home');
+    if(location.hash) history.replaceState({}, '', location.pathname);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
-  if(t === 'video'){
-    S.tabmark = '2kys306rj3o'; S.tab = '视频';
-    reset(); load();
-    tip('已切到推荐流中的视频帖');
-    return;
-  }
+  if(t === 'video'){ setTab('video'); showForum(); return; }
+  setTab(t);
   tip('「' + b.textContent.trim() + '」页面需要登录，本复原版未还原');
 });
 
@@ -1152,20 +1365,25 @@ function tip(msg){
 }
 
 /* ═══════════ 搜索框（本地过滤） ═══════════ */
-var qTimer = 0;
+var qTimer = 0, qLast = '';
 $('#q').addEventListener('input', function(){
   var kw = this.value.trim();
   clearTimeout(qTimer);
+  if(!kw){ qLast = ''; if(CUR === 'list' && L.kw){ showView('home'); setTab('home'); } return; }
   qTimer = setTimeout(function(){
-    if(!kw){ reset(); load(); return; }
-    var hit = S.items.filter(function(it){
-      return (it.subject || '').indexOf(kw) >= 0 || (it.message || '').indexOf(kw) >= 0 ||
-             (it.author || '').indexOf(kw) >= 0;
-    });
-    var h = hit.length ? hit.map(cardHTML).join('') :
-      '<div class="empty"><div class="big">🔍</div>当前页没有「' + esc(kw) + '」相关帖子<br>往下滚加载更多再试</div>';
-    $('#feed').innerHTML = h;
-  }, 260);
+    if(kw === qLast) return;
+    qLast = kw;
+    doSearch(kw);
+  }, 420);
+});
+$('#q').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    clearTimeout(qTimer);
+    var kw = this.value.trim();
+    qLast = kw;
+    if(kw){ this.blur(); doSearch(kw); }
+  }
 });
 
 /* ═══════════ 无限滚动 ═══════════ */
@@ -1190,7 +1408,8 @@ $('#logoImg').onerror = function(){ this.style.display = 'none'; };
 
 /* 返回键 */
 window.addEventListener('popstate', function(){
-  if($('#detail').style.display !== 'none') closeDetail();
+  if(CUR === 'detail'){ closeDetail(); return; }
+  if(CUR === 'list' || CUR === 'forum'){ showView('home'); setTab('home'); }
 });
 
 </script>
